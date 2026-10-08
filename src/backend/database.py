@@ -20,10 +20,23 @@ def hash_password(password):
 def init_database():
     """Initialize database if empty"""
 
-    # Initialize activities if empty
-    if activities_collection.count_documents({}) == 0:
-        for name, details in initial_activities.items():
-            activities_collection.insert_one({"_id": name, **details})
+    # Initialize missing activities without overwriting existing data
+    for name, details in initial_activities.items():
+        activities_collection.update_one(
+            {"_id": name},
+            {"$setOnInsert": details},
+            upsert=True
+        )
+    manga_details = initial_activities["Manga Maniacs"]
+    activities_collection.update_one(
+        {"_id": "Manga Maniacs"},
+        {"$set": {
+            "description": manga_details["description"],
+            "schedule": manga_details["schedule"],
+            "schedule_details": manga_details["schedule_details"],
+            "max_participants": manga_details["max_participants"]
+        }}
+    )
             
     # Initialize teacher accounts if empty
     if teachers_collection.count_documents({}) == 0:
@@ -109,6 +122,16 @@ initial_activities = {
         "max_participants": 20,
         "participants": ["ella@mergington.edu", "scarlett@mergington.edu"]
     },
+    "Manga Maniacs": {
+        "description": "Dive into bold adventures, unforgettable heroes, and imaginative worlds as we celebrate the art and storytelling of Japanese manga. Bring your favorite volumes and discover your next obsession!",
+        "schedule": "Tuesdays, 5:00 PM",
+        "schedule_details": {
+            "days": ["Tuesday"],
+            "start_time": "17:00"
+        },
+        "max_participants": 25,
+        "participants": []
+    },
     "Math Club": {
         "description": "Solve challenging problems and prepare for math competitions",
         "schedule": "Tuesdays, 7:15 AM - 8:00 AM",
@@ -186,4 +209,3 @@ initial_teachers = [
         "role": "admin"
     }
 ]
-
